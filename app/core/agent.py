@@ -1,6 +1,12 @@
 """Agent orchestration loop: plan -> tool calls -> replan on failure -> synthesize.
 Deliberately a raw loop (not LangGraph) so every step is visible and debuggable —
-this is what an interviewer will actually read."""
+this is what an interviewer will actually read.
+
+No live search API is used (see app/tools/search.py for why) — the agent researches
+from seed URLs supplied per competitor plus a few predictable review-site URL guesses,
+using fetch_page to read each one. This is still a genuine multi-step agent: it decides
+which URLs are worth fetching, replans when a fetch fails, and knows when it has
+gathered enough evidence to stop."""
 from __future__ import annotations
 import json
 import os
@@ -8,22 +14,30 @@ import os
 from app.core.llm_client import LLMClient
 from app.core.cost_tracker import CostTracker
 from app.tools.registry import TOOL_SCHEMAS, call_tool
+from app.tools.search import guess_review_urls
 
 SYSTEM_PROMPT = """You are a market research analyst agent. Given a business and a list of \
-competitors, your job is to research each competitor thoroughly using the tools available \
-(web_search, fetch_page) and gather enough evidence to support a competitor comparison report.
+competitors (each with candidate URLs to investigate), your job is to research each \
+competitor thoroughly using the fetch_page tool and gather enough evidence to support a \
+competitor comparison report.
 
 For each competitor, find:
 - Pricing/plans if publicly available
 - Positioning and key messaging (from their homepage/marketing copy)
-- Customer sentiment: praises and complaints (search for reviews on G2, Trustpilot, Reddit)
-- Recent news or product changes
+- Customer sentiment: praises and complaints (from any review-site URLs provided)
+- Recent news or product changes, if mentioned on the pages you fetch
 
-Work step by step. Call one tool at a time. If a tool fails or returns nothing useful, \
-try a different query or a different source rather than giving up on that competitor. \
+Work step by step. Call fetch_page one URL at a time, starting with the most likely to \
+have pricing/positioning info (usually the homepage or a /pricing page). If a fetch fails \
+or returns a 404/thin page, move on to the next candidate URL for that competitor rather \
+than giving up on it entirely. You do not have a search tool — only fetch the URLs you \
+were given or that you find LINKED from a page you already fetched (the page text may \
+mention other relevant URLs; you can propose fetching those too).
+
 When you have gathered enough evidence for ALL competitors, respond with plain text starting \
 with "RESEARCH_COMPLETE:" followed by a structured summary of everything you found, \
-organized per competitor, citing the URL for every claim.
+organized per competitor, citing the URL for every claim. If a competitor's pages were \
+mostly unreachable, say so plainly rather than inventing details.
 """
 
 
@@ -38,10 +52,18 @@ class MarketAnalystAgent:
         self.max_tokens = int(os.environ.get("MAX_TOKENS_PER_RUN", 200_000))
         self.cost = CostTracker(model=self.llm._model)
 
-    def run(self, business_name: str, competitors: list[str]) -> dict:
+    def run(self, business_name: str, competitors: list[dict]) -> dict:
+        """competitors: list of {"name": str, "urls": list[str]} — urls come from the
+        client config; review-site guesses are appended automatically."""
+        competitor_briefs = []
+        for comp in competitors:
+            urls = list(comp.get("urls", []))
+            urls.extend(u for u in guess_review_urls(comp["name"]) if u not in urls)
+            competitor_briefs.append(f"- {comp['name']}: candidate URLs: {', '.join(urls)}")
+
         task = (
             f"Business to analyze on behalf of: {business_name}\n"
-            f"Competitors to research: {', '.join(competitors)}\n"
+            f"Competitors to research:\n" + "\n".join(competitor_briefs) + "\n"
             "Begin your research now."
         )
         messages = [{"role": "user", "content": task}]

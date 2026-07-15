@@ -48,8 +48,8 @@ def main():
         try:
             run_result = agent.run(case["business_name"], case["competitors"])
             report = synthesize_report(run_result["research_summary"], agent.cost)
-        except (AgentRunLimitExceeded, Exception) as e:
-            print(f"  RUN FAILED: {e}")
+        except AgentRunLimitExceeded as e:
+            print(f"  RUN FAILED (limit exceeded): {e}")
             all_results.append({"case_id": case["id"], "error": str(e), "checks": []})
             continue
 

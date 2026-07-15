@@ -1,9 +1,15 @@
 # Hand-picked eval cases. Real, well-known businesses so factual claims are checkable.
+# competitors: each needs a name + seed URLs, matching sample_configs/ shape — the
+# agent has no live search API (see app/tools/search.py), so it researches from these.
 # Add more cases here as you find failure modes worth guarding against.
 
 - id: case_1
   business_name: "Notion"
-  competitors: ["Obsidian", "Coda"]
+  competitors:
+    - name: "Obsidian"
+      urls: ["https://obsidian.md"]
+    - name: "Coda"
+      urls: ["https://coda.io"]
   checks:
     - "Report must mention pricing (free tier or paid plans) for at least 2 of the competitors"
     - "Report must cite at least one source URL per competitor"
@@ -11,7 +17,11 @@
 
 - id: case_2
   business_name: "Blue Bottle Coffee"
-  competitors: ["Stumptown Coffee Roasters", "Counter Culture Coffee"]
+  competitors:
+    - name: "Stumptown Coffee Roasters"
+      urls: ["https://www.stumptowncoffee.com"]
+    - name: "Counter Culture Coffee"
+      urls: ["https://counterculturecoffee.com"]
   checks:
     - "Report must include at least one strength and one weakness per competitor"
     - "Executive summary must be specific to coffee/roasting, not generic boilerplate"
@@ -19,7 +29,11 @@
 
 - id: case_3
   business_name: "Linear"
-  competitors: ["Jira", "Asana"]
+  competitors:
+    - name: "Jira"
+      urls: ["https://www.atlassian.com/software/jira"]
+    - name: "Asana"
+      urls: ["https://asana.com"]
   checks:
     - "Report must distinguish positioning between at least 2 competitors (not identical descriptions)"
     - "Pricing section should say 'Not publicly available' rather than inventing numbers if none were found"

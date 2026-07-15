@@ -4,15 +4,25 @@ An autonomous research agent that researches a business's competitors and produc
 branded, cited PDF report — the kind of work a market analyst would normally charge
 $500-2000+ for, generated in minutes.
 
-Give it a business name and a list of competitors. It plans its own research steps,
-searches the web, reads competitor sites and review platforms, replans when a source
-fails, and synthesizes everything into a structured report with inline source citations.
+Give it a business name and a list of competitors (with seed URLs — homepage, pricing
+page, etc.). It plans which pages are worth reading, fetches and reads them, replans
+when a fetch fails, and synthesizes everything into a structured report with inline
+source citations.
+
+**No live search API is used.** Every option was tried and ruled out for this build:
+Brave requires a card even on its free tier; DuckDuckGo's scrape-friendly HTML endpoint
+actively blocks automated requests; Gemini's built-in Google Search grounding needs a
+Cloud project with billing enabled, which this account's free tier doesn't have.
+Instead, the agent researches from URLs supplied in the client config plus a couple of
+predictable review-site URL guesses (`app/tools/search.py`) — a legitimate pattern real
+research agents use ("give me seed URLs, I'll go deep"), and it means this project runs
+at genuinely $0 with no signups at all.
 
 ## Why this isn't just "a chatbot with a search tool"
 
-- **Multi-step planning with replanning on failure.** If a scrape fails or a search
-  returns nothing useful, the agent tries a different query or source rather than
-  giving up on that competitor — see `app/core/agent.py`.
+- **Multi-step planning with replanning on failure.** If a fetch fails or returns a
+  thin/404 page, the agent moves to the next candidate URL rather than giving up on
+  that competitor — see `app/core/agent.py`.
 - **Provider-agnostic by design.** The LLM backend (`app/core/llm_client.py`) is swappable
   via one environment variable (`LLM_PROVIDER=gemini|groq`), with the same interface
   ready to extend to OpenAI/Anthropic. Built and evaluated entirely on free-tier models.
@@ -36,7 +46,7 @@ app/core/llm_client.py     provider-agnostic LLM wrapper (Gemini / Groq)
 app/core/synthesizer.py    raw research notes -> structured JSON report
 app/core/report_renderer.py structured JSON -> branded PDF
 app/core/cost_tracker.py   token/cost/tool-call accounting per run
-app/tools/                 web_search (Brave), fetch_page (requests -> Playwright fallback)
+app/tools/                 fetch_page (requests -> Playwright fallback), review-site URL guesses
 eval/                      eval set + LLM-as-judge runner
 sample_configs/            one YAML per client
 ```
@@ -51,10 +61,10 @@ cp .env.example .env
 ```
 
 Fill in `.env`:
-- `GEMINI_API_KEY` — free at [aistudio.google.com](https://aistudio.google.com) (or use
-  `GROQ_API_KEY` + set `LLM_PROVIDER=groq` for faster/free Llama inference)
-- `BRAVE_API_KEY` — free tier (2000 queries/month) at
-  [brave.com/search/api](https://brave.com/search/api)
+- `GROQ_API_KEY` (free at [console.groq.com](https://console.groq.com), `LLM_PROVIDER=groq`)
+  or `GEMINI_API_KEY` if your Google account has free-tier API access enabled.
+- No key needed for research — the agent works from URLs you provide in the client
+  config (see `sample_configs/example_client.yaml`), no search API at all.
 
 ## Run it
 

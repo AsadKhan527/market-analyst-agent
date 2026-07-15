@@ -1,0 +1,11 @@
+# One config file per client — this is the "productized template" mechanism.
+# To sell to a new client, copy this file, change the values, run main.py --config <file>.
+
+business_name: "Brew & Bean Coffee Co."
+competitors:
+  - "Blue Bottle Coffee"
+  - "Stumptown Coffee Roasters"
+  - "Counter Culture Coffee"
+
+brand_color: "#6F4E37"
+output_filename: "brew_and_bean_competitor_report.pdf"

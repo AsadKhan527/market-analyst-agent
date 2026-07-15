@@ -1,0 +1,26 @@
+# Hand-picked eval cases. Real, well-known businesses so factual claims are checkable.
+# Add more cases here as you find failure modes worth guarding against.
+
+- id: case_1
+  business_name: "Notion"
+  competitors: ["Obsidian", "Coda"]
+  checks:
+    - "Report must mention pricing (free tier or paid plans) for at least 2 of the competitors"
+    - "Report must cite at least one source URL per competitor"
+    - "No claim should be unsupported by a cited source"
+
+- id: case_2
+  business_name: "Blue Bottle Coffee"
+  competitors: ["Stumptown Coffee Roasters", "Counter Culture Coffee"]
+  checks:
+    - "Report must include at least one strength and one weakness per competitor"
+    - "Executive summary must be specific to coffee/roasting, not generic boilerplate"
+    - "Opportunities section must reference something specific found in research, not generic advice"
+
+- id: case_3
+  business_name: "Linear"
+  competitors: ["Jira", "Asana"]
+  checks:
+    - "Report must distinguish positioning between at least 2 competitors (not identical descriptions)"
+    - "Pricing section should say 'Not publicly available' rather than inventing numbers if none were found"
+    - "Sources list must contain real, plausible URLs (not placeholder text)"
